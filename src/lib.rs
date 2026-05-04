@@ -1,9 +1,9 @@
 use futures::future::try_join_all;
 use reqwest::{Client, Url, header::AUTHORIZATION};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WriterInfo {
     pub id: u64,
     pub names: Vec<String>,
@@ -21,6 +21,7 @@ impl Genius {
             base: Url::parse("https://api.genius.com").unwrap(),
         }
     }
+
     pub async fn artist_songs(
         &self,
         id: u64,
@@ -137,14 +138,14 @@ struct SongInner {
     pub song: Song,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Song {
     pub apple_music_id: String,
     pub artist_names: String,
     pub writer_artists: Vec<Writer>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Writer {
     pub id: u64,
     pub name: String,
@@ -162,7 +163,7 @@ struct Search {
     pub result: SongShell,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct SongShell {
     pub id: u64,
     pub title: String,
@@ -173,7 +174,7 @@ struct ArtistInner {
     pub artist: Artist,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Artist {
     pub alternate_names: Vec<String>,
     pub name: String,
@@ -183,7 +184,7 @@ pub struct Artist {
 struct ArtistSongInner {
     pub songs: Vec<ArtistSong>,
 }
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ArtistSong {
     pub id: u64,
     pub artist_names: String,
