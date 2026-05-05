@@ -113,6 +113,7 @@ impl Genius {
             let w_info = self.artist(w.id).await?;
             let mut names = w_info.alternate_names.clone();
             names.push(w_info.name);
+            names.dedup_by(|x, y| x == y);
             Ok::<WriterInfo, DynError>(WriterInfo { id: w.id, names })
         }))
         .await?;
