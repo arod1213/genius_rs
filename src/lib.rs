@@ -1,7 +1,7 @@
 use futures::future::try_join_all;
 use reqwest::{Client, Url, header::AUTHORIZATION};
 use serde::{Deserialize, Serialize};
-use std::fmt::Debug;
+use std::{error::Error, fmt::Debug};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WriterInfo {
@@ -14,6 +14,8 @@ pub struct Genius {
     pub base: Url,
 }
 
+type DynError = Box<dyn Error + Sync + Send>;
+
 impl Genius {
     pub fn new(access_token: &str) -> Self {
         Self {
@@ -22,10 +24,7 @@ impl Genius {
         }
     }
 
-    pub async fn artist_songs(
-        &self,
-        id: u64,
-    ) -> Result<Vec<ArtistSong>, Box<dyn std::error::Error>> {
+    pub async fn artist_songs(&self, id: u64) -> Result<Vec<ArtistSong>, DynError> {
         let client = Client::new();
 
         let href = self.base.join(&format!("artists/{id}/songs")).unwrap();
@@ -44,7 +43,7 @@ impl Genius {
         Ok(x.response.songs)
     }
 
-    pub async fn search(&self, key: &str) -> Result<Vec<SongShell>, Box<dyn std::error::Error>> {
+    pub async fn search(&self, key: &str) -> Result<Vec<SongShell>, DynError> {
         let client = Client::new();
 
         let href = self.base.join("search").unwrap();
@@ -65,7 +64,7 @@ impl Genius {
         Ok(x.response.hits.into_iter().map(|x| x.result).collect())
     }
 
-    pub async fn artist(&self, id: u64) -> Result<Artist, Box<dyn std::error::Error>> {
+    pub async fn artist(&self, id: u64) -> Result<Artist, DynError> {
         let client = Client::new();
 
         let href = self.base.join(&format!("artists/{id}")).unwrap();
@@ -84,7 +83,7 @@ impl Genius {
         Ok(x.response.artist)
     }
 
-    pub async fn song(&self, id: u64) -> Result<Song, Box<dyn std::error::Error>> {
+    pub async fn song(&self, id: u64) -> Result<Song, DynError> {
         let client = Client::new();
 
         let href = self.base.join(&format!("songs/{id}")).unwrap();
@@ -103,10 +102,7 @@ impl Genius {
         Ok(x.response.song)
     }
 
-    pub async fn track_credits(
-        &self,
-        title: &str,
-    ) -> Result<Vec<WriterInfo>, Box<dyn std::error::Error>> {
+    pub async fn track_credits(&self, title: &str) -> Result<Vec<WriterInfo>, DynError> {
         let tracks = self.search(title).await?;
         let Some(top_track) = tracks.first() else {
             return Err("no tracks found".into());
@@ -117,7 +113,7 @@ impl Genius {
             let w_info = self.artist(w.id).await?;
             let mut names = w_info.alternate_names.clone();
             names.push(w_info.name);
-            Ok::<WriterInfo, Box<dyn std::error::Error>>(WriterInfo { id: w.id, names })
+            Ok::<WriterInfo, DynError>(WriterInfo { id: w.id, names })
         }))
         .await?;
 
