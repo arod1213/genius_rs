@@ -102,19 +102,30 @@ impl Genius {
         Ok(x.response.song)
     }
 
-    pub async fn track_credits(&self, title: &str) -> Result<Vec<WriterInfo>, DynError> {
-        let tracks = self.search(title).await?;
-        let Some(top_track) = tracks.first() else {
-            return Err("no tracks found".into());
-        };
-        let track_info = self.song(top_track.id).await?;
+    pub async fn track_credits(&self, id: u64) -> Result<Vec<WriterInfo>, DynError> {
+        let track_info = self.song(id).await?;
 
         let writers = try_join_all(track_info.writer_artists.into_iter().map(|w| async move {
-            let w_info = self.artist(w.id).await?;
-            let mut names = w_info.alternate_names.clone();
-            names.push(w_info.name);
-            names.dedup_by(|x, y| x.trim().to_lowercase() == y.trim().to_lowercase());
-            Ok::<WriterInfo, DynError>(WriterInfo { id: w.id, names })
+            let mut writer = self.artist(w.id).await?;
+            writer.alternate_names.push(writer.name);
+            writer.alternate_names.iter_mut().for_each(|x| {
+                *x = x
+                    .chars()
+                    .map(|c| if c.is_ascii() { c } else { ' ' })
+                    .collect::<String>()
+                    .split_whitespace()
+                    .collect::<Vec<&str>>()
+                    .join(" ")
+            });
+            writer.alternate_names.sort();
+            writer
+                .alternate_names
+                .dedup_by(|x, y| x.to_lowercase() == y.to_lowercase());
+
+            Ok::<WriterInfo, DynError>(WriterInfo {
+                id: w.id,
+                names: writer.alternate_names,
+            })
         }))
         .await?;
 
