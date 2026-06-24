@@ -186,6 +186,7 @@ struct ArtistInner {
 pub struct Artist {
     pub alternate_names: Vec<String>,
     pub name: String,
+    pub image_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
