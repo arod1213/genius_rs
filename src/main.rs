@@ -12,14 +12,14 @@ async fn main() {
     //     .track_credits("Peaches Justin Bieber")
     //     .await
     //     .unwrap();
-    // let tracks = genius.artist_songs(357).await.unwrap();
-    // dbg!(tracks);
-    let artist_id = genius
-        .identify_artist_id(
-            "aidan rodriguez",
-            &["Drunk Tank Marc E Bassy", "Sexy Villain Remi Wolf"],
-        )
-        .await
-        .unwrap();
-    dbg!(artist_id);
+    let tracks = genius.artist_songs(620527).await.unwrap();
+    dbg!(tracks);
+    // let artist_id = genius
+    //     .identify_artist_id(
+    //         "aidan rodriguez",
+    //         &["Drunk Tank Marc E Bassy", "Sexy Villain Remi Wolf"],
+    //     )
+    //     .await
+    //     .unwrap();
+    // dbg!(artist_id);
 }
