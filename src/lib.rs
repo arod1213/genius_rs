@@ -181,7 +181,7 @@ struct SongInner {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Song {
-    pub apple_music_id: String,
+    pub apple_music_id: Option<String>,
     pub artist_names: String,
     pub writer_artists: Vec<Writer>,
     pub producer_artists: Vec<Writer>,
