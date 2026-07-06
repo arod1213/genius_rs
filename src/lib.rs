@@ -232,4 +232,12 @@ pub struct ArtistSong {
     pub id: u64,
     pub artist_names: String,
     pub title: String,
+    pub release_date_components: ReleaseDateComponents,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ReleaseDateComponents {
+    pub year: u32,
+    pub month: u32,
+    pub day: u32,
 }
