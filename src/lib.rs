@@ -38,11 +38,14 @@ impl Genius {
         Ok(None)
     }
 
-    pub async fn identify_artist_id(
+    pub async fn identify_artist_id<S>(
         &self,
         artist_name: &str,
-        titles: &[&str],
-    ) -> Result<Option<u64>, DynError> {
+        titles: &[S],
+    ) -> Result<Option<u64>, DynError>
+    where
+        S: AsRef<str> + Serialize,
+    {
         for title in titles {
             let results = self.search(title).await?;
             for res in &results {
@@ -73,7 +76,10 @@ impl Genius {
         Ok(x.response.songs)
     }
 
-    pub async fn search(&self, key: &str) -> Result<Vec<SongShell>, DynError> {
+    pub async fn search<S>(&self, key: S) -> Result<Vec<SongShell>, DynError>
+    where
+        S: AsRef<str> + Serialize,
+    {
         let href = self.base.join("search").unwrap();
         let query = vec![("q", key)];
         let res = self
