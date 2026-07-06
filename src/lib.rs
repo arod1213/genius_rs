@@ -12,6 +12,7 @@ pub struct WriterInfo {
 pub struct Genius {
     pub bearer: String,
     pub base: Url,
+    client: Client,
 }
 
 type DynError = Box<dyn Error + Sync + Send>;
@@ -21,14 +22,43 @@ impl Genius {
         Self {
             bearer: format!("Bearer {access_token}"),
             base: Url::parse("https://api.genius.com").unwrap(),
+            client: Client::new(),
         }
     }
 
-    pub async fn artist_songs(&self, id: u64) -> Result<Vec<ArtistSong>, DynError> {
-        let client = Client::new();
+    async fn find_credit(&self, res: &SongShell, name: &str) -> Result<Option<u64>, DynError> {
+        let song = self.song(res.id).await?;
+        for party in song.writer_artists.into_iter().chain(song.producer_artists) {
+            // TODO: make spelling tolerance
+            // TODO: if name is close (medium confidence, search for alternate names)
+            if party.name.eq_ignore_ascii_case(name) {
+                return Ok(Some(party.id));
+            }
+        }
+        Ok(None)
+    }
 
+    pub async fn identify_artist_id(
+        &self,
+        artist_name: &str,
+        titles: &[&str],
+    ) -> Result<Option<u64>, DynError> {
+        for title in titles {
+            let results = self.search(title).await?;
+            for res in &results {
+                let Some(id) = self.find_credit(res, artist_name).await? else {
+                    continue;
+                };
+                return Ok(Some(id));
+            }
+        }
+        Ok(None)
+    }
+
+    pub async fn artist_songs(&self, id: u64) -> Result<Vec<ArtistSong>, DynError> {
         let href = self.base.join(&format!("artists/{id}/songs")).unwrap();
-        let res = client
+        let res = self
+            .client
             .get(href)
             .header(AUTHORIZATION, &self.bearer)
             .send()
@@ -44,11 +74,10 @@ impl Genius {
     }
 
     pub async fn search(&self, key: &str) -> Result<Vec<SongShell>, DynError> {
-        let client = Client::new();
-
         let href = self.base.join("search").unwrap();
         let query = vec![("q", key)];
-        let res = client
+        let res = self
+            .client
             .get(href)
             .header(AUTHORIZATION, &self.bearer)
             .query(&query)
@@ -65,10 +94,9 @@ impl Genius {
     }
 
     pub async fn artist(&self, id: u64) -> Result<Artist, DynError> {
-        let client = Client::new();
-
         let href = self.base.join(&format!("artists/{id}")).unwrap();
-        let res = client
+        let res = self
+            .client
             .get(href)
             .header(AUTHORIZATION, &self.bearer)
             .send()
@@ -84,10 +112,9 @@ impl Genius {
     }
 
     pub async fn song(&self, id: u64) -> Result<Song, DynError> {
-        let client = Client::new();
-
         let href = self.base.join(&format!("songs/{id}")).unwrap();
-        let res = client
+        let res = self
+            .client
             .get(href)
             .header(AUTHORIZATION, &self.bearer)
             .send()
@@ -151,6 +178,7 @@ pub struct Song {
     pub apple_music_id: String,
     pub artist_names: String,
     pub writer_artists: Vec<Writer>,
+    pub producer_artists: Vec<Writer>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
